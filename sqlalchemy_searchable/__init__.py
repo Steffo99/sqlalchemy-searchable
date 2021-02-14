@@ -43,7 +43,7 @@ def inspect_search_vectors(entity):
     ]
 
 
-def search(query, search_query, vector=None, regconfig=None, sort=False):
+def search(query, search_query, vector=None, regconfig=None, sort=False, weights=None):
     """
     Search given query with full text search.
 
@@ -51,6 +51,9 @@ def search(query, search_query, vector=None, regconfig=None, sort=False):
     :param vector: search vector to use
     :param regconfig: postgresql regconfig to be used
     :param sort: order results by relevance (quality of hit)
+    :param weights: collection of 4 :class:`float` representing the weight that
+                    word instances tagged with D, C, B, and A should have respectively;
+                    defaults to [0.1, 0.2, 0.4, 1.0] if :data:`None`.
     """
     if not search_query.strip():
         return query
@@ -67,14 +70,18 @@ def search(query, search_query, vector=None, regconfig=None, sort=False):
         vector.op('@@')(sa.func.tsq_parse(regconfig, search_query))
     )
     if sort:
-        query = query.order_by(
-            sa.desc(
-                sa.func.ts_rank_cd(
-                    vector,
-                    sa.func.tsq_parse(search_query)
-                )
+        if weights:
+            rank_cd = sa.func.ts_rank_cd(
+                weights,
+                vector,
+                sa.func.tsq_parse(search_query)
             )
-        )
+        else:
+            rank_cd = sa.func.ts_rank_cd(
+                vector,
+                sa.func.tsq_parse(search_query)
+            )
+        query = query.order_by(sa.desc(rank_cd))
 
     return query.params(term=search_query)
 
