@@ -76,10 +76,10 @@ def search(query, search_query, vector=None, regconfig=None, sort=False, weights
     )
     if sort:
         rank_cd = sa.func.ts_rank_cd(
-            *[weights if weights else []],
+            *[weights if weights is not None else []],
             vector,
             sa.func.tsq_parse(search_query),
-            *[normalization if normalization else []]
+            *[normalization if normalization is not None else []]
         )
 
         query = query.order_by(sa.desc(rank_cd))
