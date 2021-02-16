@@ -43,7 +43,7 @@ def inspect_search_vectors(entity):
     ]
 
 
-def search(query, search_query, vector=None, regconfig=None, sort=False, weights=None, normalization=None):
+def search(query, search_query, vector=None, regconfig=None, sort=False, use_cover_density=True, weights=None, normalization=None):
     """
     Search given query with full text search.
 
@@ -51,6 +51,7 @@ def search(query, search_query, vector=None, regconfig=None, sort=False, weights
     :param vector: search vector to use
     :param regconfig: postgresql regconfig to be used
     :param sort: order results by relevance (quality of hit)
+    :param use_cover_density: whether ``ts_rank_cd`` should be used instead of ``ts_rank``
     :param weights: collection of 4 :class:`float` representing the weight that
                     word instances tagged with D, C, B, and A should have respectively;
                     defaults to [0.1, 0.2, 0.4, 1.0] if :data:`None`.
@@ -75,7 +76,9 @@ def search(query, search_query, vector=None, regconfig=None, sort=False, weights
         vector.op('@@')(sa.func.tsq_parse(regconfig, search_query))
     )
     if sort:
-        rank_cd = sa.func.ts_rank(
+        func = sa.func.ts_rank_cd if use_cover_density else sa.func.ts_rank
+
+        rank_cd = func(
             *[weights if weights is not None else []],
             vector,
             sa.func.tsq_parse(search_query),
