@@ -75,7 +75,7 @@ def search(query, search_query, vector=None, regconfig=None, sort=False, weights
         vector.op('@@')(sa.func.tsq_parse(regconfig, search_query))
     )
     if sort:
-        rank_cd = sa.func.ts_rank_cd(
+        rank_cd = sa.func.ts_rank(
             *[weights if weights is not None else []],
             vector,
             sa.func.tsq_parse(search_query),
